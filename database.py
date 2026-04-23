@@ -2,6 +2,7 @@ import chromadb
 from chromadb.utils import embedding_functions
 import ollama
 from config import DB_DIR, OLLAMA_EMBED_MODEL
+from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)

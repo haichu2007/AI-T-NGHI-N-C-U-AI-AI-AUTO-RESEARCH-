@@ -21,7 +21,7 @@ importlib.reload(database)
 from collector import PaperCollector
 from processor import PaperProcessor
 from analyst import ResearchAnalyst
-from database import KnowledgeBase
+from database import KnowledgeBase, UserMemory
 
 # Page config
 st.set_page_config(
@@ -94,6 +94,17 @@ with st.sidebar:
     st.header("Dashboard")
     menu = st.radio("Chức năng", ["Tổng quan kho tri thức", "Báo cáo nghiên cứu mới", "Tìm kiếm thông minh", "Vòng lặp Nghiên cứu Đa Agent", "Chế độ AI Tự Tiến Hóa", "Chat với Bộ não AI"])
     st.divider()
+    st.header("🧠 Bộ nhớ cá nhân")
+    all_memories = user_memory.get_all_memories()
+    if all_memories:
+        for m in all_memories:
+            st.caption(f"• {m}")
+        if st.button("🗑️ Xóa bộ nhớ"):
+            user_memory.clear_memory()
+            st.rerun()
+    else:
+        st.info("AI chưa có thông tin gì về bạn.")
+    st.divider()
     st.info("Hệ thống đang hoạt động độc lập và bảo mật cục bộ.")
 
 # Initialize KB
@@ -101,7 +112,12 @@ with st.sidebar:
 def get_kb():
     return KnowledgeBase()
 
+@st.cache_resource
+def get_memory():
+    return UserMemory()
+
 kb = get_kb()
+user_memory = get_memory()
 
 if menu == "Tổng quan kho tri thức":
     st.subheader("📚 Thư viện bài báo đã phân tích")
@@ -302,7 +318,7 @@ elif menu == "Chat với Bộ não AI":
         st.session_state.messages.append({"role": "user", "content": prompt})
 
         with st.spinner("🧠 Đang lục lại trí nhớ..."):
-            # 1. Retrieve context
+            # 1. Retrieve context from Research KB
             results = kb.search_similar(prompt, n_results=3)
             context_docs = []
             if results['documents']:
@@ -311,9 +327,12 @@ elif menu == "Chat với Bộ não AI":
                     meta = results['metadatas'][0][i]
                     context_docs.append(f"Từ bài báo '{meta['title']}':\n{meta['analysis']}\nNội dung: {doc[:1000]}")
             
-            # 2. Generate response using Analyst
-            analyst = ResearchAnalyst()
-            stream = analyst.stream_chat_with_brain(prompt, context_docs)
+            # 2. Retrieve personal memories
+            relevant_mems = user_memory.get_relevant_memories(prompt)
+            
+            # 3. Generate response using Analyst
+            analyst_tool = ResearchAnalyst()
+            stream = analyst_tool.stream_chat_with_brain(prompt, context_docs, relevant_mems)
 
         # Display assistant response in chat message container
         with st.chat_message("assistant"):
@@ -324,6 +343,13 @@ elif menu == "Chat với Bộ não AI":
                         content = chunk['message']['content']
                         full_response += content
                         yield content
+                    
+                    # 4. Extract and save new memories after response
+                    new_mems = analyst_tool.extract_new_memories(prompt)
+                    for m in new_mems:
+                        if m not in all_memories:
+                            user_memory.add_memory(m)
+                    
                     st.session_state.messages.append({"role": "assistant", "content": full_response})
                 
                 st.write_stream(response_generator())

@@ -131,10 +131,27 @@ class ResearchAnalyst:
 
             return "Xin lỗi, tôi gặp lỗi khi xử lý câu hỏi của bạn."
 
-    def stream_chat_with_brain(self, query, context_docs):
-        """Chat with the user and stream the response."""
+    def stream_chat_with_brain(self, query, context_docs, user_memories=[]):
+        """Chat with the user and stream the response, including knowledge and user memories."""
         context_text = "\n\n".join(context_docs)
-        prompt = f"Bạn là một Trợ lý Nghiên cứu AI. Tài liệu: {context_text}\nCâu hỏi: {query}\nTrả lời bằng tiếng Việt."
+        memory_text = "\n".join([f"- {m}" for m in user_memories]) if user_memories else "Chưa có thông tin đặc biệt về người dùng."
+        
+        prompt = f"""
+        Bạn là một Trợ lý Nghiên cứu AI thông minh. 
+        
+        THÔNG TIN VỀ NGƯỜI DÙNG (BỘ NHỚ):
+        {memory_text}
+        
+        TÀI LIỆU NGHIÊN CỨU LIÊN QUAN:
+        {context_text}
+        
+        CÂU HỎI CỦA NGƯỜI DÙNG: {query}
+        
+        Nhiệm vụ:
+        1. Trả lời dựa trên tài liệu nghiên cứu VÀ ghi nhớ/sử dụng thông tin về người dùng nếu cần thiết.
+        2. Nếu người dùng hỏi về bản thân họ, hãy sử dụng phần THÔNG TIN VỀ NGƯỜI DÙNG.
+        3. Trả lời bằng tiếng Việt, thân thiện và chuyên nghiệp.
+        """
         
         try:
             return ollama.chat(
@@ -146,6 +163,34 @@ class ResearchAnalyst:
         except Exception as e:
             logger.error(f"Stream Chat error: {e}")
             return None
+
+    def extract_new_memories(self, user_input):
+        """Identify if the user provided new personal information or facts to remember."""
+        prompt = f"""
+        Phân tích câu nói sau của người dùng và trích xuất các sự thật (facts) quan trọng về họ hoặc sở thích của họ để ghi nhớ.
+        Chỉ trích xuất những thông tin mang tính lâu dài (tên, nghề nghiệp, sở thích, mục tiêu).
+        
+        CÂU NÓI: "{user_input}"
+        
+        Yêu cầu:
+        - Nếu có thông tin mới, hãy viết mỗi thông tin trên một dòng, bắt đầu bằng dấu "-".
+        - Nếu không có thông tin gì đáng nhớ, chỉ trả về từ "NONE".
+        - Trả lời bằng tiếng Việt.
+        """
+        
+        try:
+            response = ollama.chat(
+                model=self.model, 
+                messages=[{'role': 'user', 'content': prompt}],
+                options=OLLAMA_OPTIONS
+            )
+            content = response['message']['content'].strip()
+            if "NONE" in content.upper():
+                return []
+            return [line.strip("- ").strip() for line in content.split("\n") if line.strip("- ").strip()]
+        except Exception as e:
+            logger.error(f"Memory extraction error: {e}")
+            return []
 
 if __name__ == "__main__":
     analyst = ResearchAnalyst()
