@@ -88,6 +88,18 @@ st.markdown("""
 st.title("🚀 AI Automated Research Hub")
 st.markdown("Hệ thống tự động nghiên cứu và cập nhật tri thức AI - Chạy bằng **Ollama**")
 
+# Initialize KB
+@st.cache_resource
+def get_kb():
+    return KnowledgeBase()
+
+@st.cache_resource
+def get_memory():
+    return UserMemory()
+
+kb = get_kb()
+user_memory = get_memory()
+
 # Sidebar
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/2103/2103633.png", width=100)
@@ -118,18 +130,6 @@ with st.sidebar:
         st.info("AI chưa có thông tin gì về bạn. Hãy chat để AI tự ghi nhớ hoặc thêm thủ công.")
     st.divider()
     st.info("Hệ thống đang hoạt động độc lập và bảo mật cục bộ.")
-
-# Initialize KB
-@st.cache_resource
-def get_kb():
-    return KnowledgeBase()
-
-@st.cache_resource
-def get_memory():
-    return UserMemory()
-
-kb = get_kb()
-user_memory = get_memory()
 
 if menu == "Tổng quan kho tri thức":
     st.subheader("📚 Thư viện bài báo đã phân tích")
