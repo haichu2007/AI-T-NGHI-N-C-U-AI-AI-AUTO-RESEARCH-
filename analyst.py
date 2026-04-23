@@ -92,6 +92,35 @@ class ResearchAnalyst:
             logger.error(f"Evolution Agent error: {e}")
             return "Khởi tạo nghiên cứu tự thân thất bại."
 
+    def chat_with_brain(self, query, context_docs):
+        """Chat with the user using retrieved knowledge as context."""
+        context_text = "\n\n".join(context_docs)
+        
+        prompt = f"""
+        Bạn là một Trợ lý Nghiên cứu AI thông minh. Bạn có quyền truy cập vào kho tri thức chuyên sâu về AI mà hệ thống đã thu thập được.
+        
+        Dưới đây là các tài liệu liên quan đến câu hỏi của người dùng:
+        {context_text}
+        
+        Câu hỏi của người dùng: {query}
+        
+        Nhiệm vụ:
+        1. Trả lời câu hỏi một cách chính xác và chuyên sâu dựa trên thông tin được cung cấp.
+        2. Nếu thông tin cung cấp không đủ để trả lời, hãy nói rõ và sử dụng kiến thức chung của bạn để bổ sung nhưng phải lưu ý đó là kiến thức ngoài kho tri thức.
+        3. Giữ phong cách trả lời chuyên nghiệp, súc tích và hữu ích.
+        
+        Trả lời bằng tiếng Việt.
+        """
+        
+        try:
+            response = ollama.chat(model=self.model, messages=[
+                {'role': 'user', 'content': prompt}
+            ])
+            return response['message']['content']
+        except Exception as e:
+            logger.error(f"Chat error: {e}")
+            return "Xin lỗi, tôi gặp lỗi khi xử lý câu hỏi của bạn."
+
 if __name__ == "__main__":
     analyst = ResearchAnalyst()
     # report = analyst.generate_research_report(["Summary 1...", "Summary 2..."])
