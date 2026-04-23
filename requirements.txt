@@ -6,3 +6,4 @@ schedule
 requests
 tqdm
 python-dotenv
+streamlit
