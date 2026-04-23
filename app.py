@@ -333,7 +333,7 @@ elif menu == "Chat với Bộ não AI":
             # 1. Retrieve context from Research KB
             results = kb.search_similar(prompt, n_results=3)
             context_docs = []
-            if results['documents']:
+            if results['documents'] and results['documents'][0]:
                 for i in range(len(results['documents'][0])):
                     doc = results['documents'][0][i]
                     meta = results['metadatas'][0][i]
@@ -342,29 +342,39 @@ elif menu == "Chat với Bộ não AI":
             # 2. Retrieve personal memories
             relevant_mems = user_memory.get_relevant_memories(prompt)
             
-            # 3. Generate response using Analyst
+            # 3. Generate response using Analyst (Passing history)
             analyst_tool = ResearchAnalyst()
-            stream = analyst_tool.stream_chat_with_brain(prompt, context_docs, relevant_mems)
+            stream = analyst_tool.stream_chat_with_brain(
+                prompt, 
+                context_docs, 
+                relevant_mems, 
+                st.session_state.messages[:-1] # All except the current prompt which we'll handle
+            )
 
         # Display assistant response in chat message container
         with st.chat_message("assistant"):
             if stream:
-                def response_generator():
-                    full_response = ""
-                    for chunk in stream:
-                        content = chunk['message']['content']
-                        full_response += content
-                        yield content
-                    
-                    # 4. Extract and save new memories after response
-                    new_mems = analyst_tool.extract_new_memories(prompt)
-                    for m in new_mems:
-                        if m not in all_memories:
-                            user_memory.add_memory(m)
-                    
-                    st.session_state.messages.append({"role": "assistant", "content": full_response})
+                full_response = st.write_stream(stream)
                 
-                st.write_stream(response_generator())
+                # Add assistant message to chat history
+                st.session_state.messages.append({"role": "assistant", "content": full_response})
+                
+                # 4. Extract and save new memories after response
+                with st.status("📝 Đang cập nhật bộ nhớ dài hạn...", expanded=False) as mem_status:
+                    new_mems = analyst_tool.extract_new_memories(prompt)
+                    added_any = False
+                    for m in new_mems:
+                        # Simple check to avoid duplicates
+                        existing_mems = user_memory.get_all_memories()
+                        if m not in existing_mems:
+                            user_memory.add_memory(m)
+                            st.write(f"Đã ghi nhớ thêm: *{m}*")
+                            added_any = True
+                    
+                    if added_any:
+                        mem_status.update(label="Đã cập nhật bộ nhớ!", state="complete")
+                    else:
+                        mem_status.update(label="Không có thông tin mới cần ghi nhớ.", state="complete")
             else:
                 st.error("Không thể kết nối với AI.")
 
