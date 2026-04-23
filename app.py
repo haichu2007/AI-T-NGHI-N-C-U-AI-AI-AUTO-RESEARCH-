@@ -74,7 +74,7 @@ st.markdown("Hệ thống tự động nghiên cứu và cập nhật tri thức
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/2103/2103633.png", width=100)
     st.header("Dashboard")
-    menu = st.radio("Chức năng", ["Tổng quan kho tri thức", "Báo cáo nghiên cứu mới", "Tìm kiếm thông minh"])
+    menu = st.radio("Chức năng", ["Tổng quan kho tri thức", "Báo cáo nghiên cứu mới", "Tìm kiếm thông minh", "Vòng lặp Nghiên cứu Đa Agent"])
     st.divider()
     st.info("Hệ thống đang hoạt động độc lập và bảo mật cục bộ.")
 
@@ -144,6 +144,58 @@ elif menu == "Tìm kiếm thông minh":
                     st.write(f"[Link arXiv]({meta['url']})")
         else:
             st.write("Không tìm thấy kết quả phù hợp.")
+
+elif menu == "Vòng lặp Nghiên cứu Đa Agent":
+    st.subheader("🔄 Multi-Agent Deep Research Loop")
+    st.markdown("Quy trình: **User Topic** ➔ **AI 1 (Researcher)** ➔ **AI 2 (Architect)** ➔ **Upgraded Research**")
+    
+    seed_topic = st.text_input("Nhập chủ đề hoặc ý tưởng sơ khai của bạn:", placeholder="Ví dụ: AI trong y tế, Tối ưu hóa LLM...")
+    
+    if st.button("Bắt đầu chu trình nghiên cứu chuyên sâu"):
+        if not seed_topic:
+            st.error("Vui lòng nhập chủ đề!")
+        else:
+            with st.status("🤖 AI Agents đang làm việc...", expanded=True) as status:
+                from collector import PaperCollector
+                from processor import PaperProcessor
+                from analyst import ResearchAnalyst
+                
+                collector = PaperCollector()
+                processor = PaperProcessor()
+                analyst = ResearchAnalyst()
+                
+                # --- AI 1: RESEARCHER ---
+                st.write("🕵️ **AI 1 (Researcher)**: Đang tìm kiếm bài báo liên quan...")
+                papers = collector.search_papers(query=seed_topic, max_results=3)
+                
+                findings = []
+                for p in papers:
+                    st.write(f"  - Đang đọc: *{p['title']}*")
+                    pdf_path = collector.download_pdf(p)
+                    if pdf_path:
+                        text = processor.extract_text_from_pdf(pdf_path)
+                        if text:
+                            analysis = processor.summarize_paper(text, p)
+                            findings.append(analysis)
+                
+                if not findings:
+                    st.error("AI 1 không tìm thấy tài liệu phù hợp.")
+                    status.update(label="Thất bại", state="error")
+                else:
+                    # --- AI 2: ARCHITECT ---
+                    st.write("🏗️ **AI 2 (Architect)**: Đang phản biện và nâng cấp chủ đề...")
+                    upgraded_report = analyst.refine_and_upgrade_topic(seed_topic, findings)
+                    
+                    st.divider()
+                    st.markdown("### 🏆 KẾT QUẢ NGHIÊN CỨU CHUYÊN SÂU")
+                    st.markdown(upgraded_report)
+                    
+                    # Store in logs/reports
+                    report_path = Path("data") / f"deep_research_{datetime.now().strftime('%Y%m%d_%H%M')}.md"
+                    with open(report_path, "w", encoding="utf-8") as f:
+                        f.write(f"# Báo cáo Nghiên cứu Đa Agent\n\nChủ đề gốc: {seed_topic}\n\n{upgraded_report}")
+                    
+                    status.update(label="Hoàn tất chu trình!", state="complete")
 
 # Footer
 st.divider()

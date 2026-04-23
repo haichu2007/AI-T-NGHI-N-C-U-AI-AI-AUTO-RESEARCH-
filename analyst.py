@@ -39,6 +39,35 @@ class ResearchAnalyst:
             logger.error(f"Ollama error during analysis: {e}")
             return "Không thể tạo báo cáo phân tích."
 
+    def refine_and_upgrade_topic(self, seed_topic, findings):
+        """AI Agent 2: Architect/Critic. Refines the topic based on findings and upgrades it."""
+        combined_findings = "\n---\n".join(findings)
+        
+        prompt = f"""
+        Bạn là một Kiến trúc sư AI cấp cao (Senior AI Architect).
+        Chủ đề nghiên cứu ban đầu: {seed_topic}
+        
+        Dưới đây là các kết quả nghiên cứu mới nhất mà AI 1 đã tìm được:
+        {combined_findings}
+        
+        Nhiệm vụ của bạn:
+        1. Đánh giá xem chủ đề ban đầu có còn phù hợp với xu hướng hiện tại không?
+        2. Tinh chỉnh (Refine) chủ đề ban đầu để trở nên chuyên sâu và đột phá hơn.
+        3. Đề xuất một "Bản nâng cấp" (Upgrade) cho hướng nghiên cứu này (A11 Level).
+        4. Tạo ra một "Từ khóa tìm kiếm mới" (New Search Query) để AI 1 tiếp tục tìm kiếm sâu hơn.
+        
+        Trả lời bằng tiếng Việt, phân tích sắc sảo và mang tính định hướng tương lai.
+        """
+        
+        try:
+            response = ollama.chat(model=self.model, messages=[
+                {'role': 'user', 'content': prompt}
+            ])
+            return response['message']['content']
+        except Exception as e:
+            logger.error(f"Architect Agent error: {e}")
+            return "Không thể tinh chỉnh chủ đề."
+
 if __name__ == "__main__":
     analyst = ResearchAnalyst()
     # report = analyst.generate_research_report(["Summary 1...", "Summary 2..."])
