@@ -131,32 +131,40 @@ class ResearchAnalyst:
 
             return "Xin lỗi, tôi gặp lỗi khi xử lý câu hỏi của bạn."
 
-    def stream_chat_with_brain(self, query, context_docs, user_memories=[]):
-        """Chat with the user and stream the response, including knowledge and user memories."""
-        context_text = "\n\n".join(context_docs)
-        memory_text = "\n".join([f"- {m}" for m in user_memories]) if user_memories else "Chưa có thông tin đặc biệt về người dùng."
+    def stream_chat_with_brain(self, query, context_docs, user_memories=[], history=[]):
+        """Chat with the user and stream the response, including history, knowledge and user memories."""
+        context_text = "\n\n".join(context_docs) if context_docs else "Không có tài liệu nghiên cứu liên quan cho câu hỏi này."
+        memory_text = "\n".join([f"- {m}" for m in user_memories]) if user_memories else "Chưa có thông tin đặc biệt về người dùng trong bộ nhớ dài hạn."
         
-        prompt = f"""
+        system_prompt = f"""
         Bạn là một Trợ lý Nghiên cứu AI thông minh. 
         
-        THÔNG TIN VỀ NGƯỜI DÙNG (BỘ NHỚ):
+        THÔNG TIN VỀ NGƯỜI DÙNG (BỘ NHỚ DÀI HẠN):
         {memory_text}
         
         TÀI LIỆU NGHIÊN CỨU LIÊN QUAN:
         {context_text}
         
-        CÂU HỎI CỦA NGƯỜI DÙNG: {query}
-        
         Nhiệm vụ:
         1. Trả lời dựa trên tài liệu nghiên cứu VÀ ghi nhớ/sử dụng thông tin về người dùng nếu cần thiết.
         2. Nếu người dùng hỏi về bản thân họ, hãy sử dụng phần THÔNG TIN VỀ NGƯỜI DÙNG.
-        3. Trả lời bằng tiếng Việt, thân thiện và chuyên nghiệp.
+        3. Duy trì cuộc hội thoại tự nhiên, chuyên nghiệp và hữu ích.
+        4. Trả lời bằng tiếng Việt.
         """
+        
+        messages = [{'role': 'system', 'content': system_prompt}]
+        
+        # Add conversation history
+        for msg in history:
+            messages.append({'role': msg['role'], 'content': msg['content']})
+        
+        # Add current query
+        messages.append({'role': 'user', 'content': query})
         
         try:
             return ollama.chat(
                 model=self.model, 
-                messages=[{'role': 'user', 'content': prompt}],
+                messages=messages,
                 options=OLLAMA_OPTIONS,
                 stream=True
             )
