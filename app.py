@@ -92,7 +92,7 @@ st.markdown("Hệ thống tự động nghiên cứu và cập nhật tri thức
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/2103/2103633.png", width=100)
     st.header("Dashboard")
-    menu = st.radio("Chức năng", ["Tổng quan kho tri thức", "Báo cáo nghiên cứu mới", "Tìm kiếm thông minh", "Vòng lặp Nghiên cứu Đa Agent", "Chế độ AI Tự Tiến Hóa"])
+    menu = st.radio("Chức năng", ["Tổng quan kho tri thức", "Báo cáo nghiên cứu mới", "Tìm kiếm thông minh", "Vòng lặp Nghiên cứu Đa Agent", "Chế độ AI Tự Tiến Hóa", "Chat với Bộ não AI"])
     st.divider()
     st.info("Hệ thống đang hoạt động độc lập và bảo mật cục bộ.")
 
@@ -280,6 +280,47 @@ elif menu == "Chế độ AI Tự Tiến Hóa":
         for idx, step in enumerate(reversed(st.session_state.evolve_history)):
             with st.expander(f"Bước tiến hóa {len(st.session_state.evolve_history) - idx}"):
                 st.markdown(step)
+
+elif menu == "Chat với Bộ não AI":
+    st.subheader("💬 Chat với Bộ não AI")
+    st.markdown("Hỏi bất cứ điều gì về AI, tôi sẽ trả lời dựa trên kho tri thức mà tôi đã tự nghiên cứu.")
+
+    # Initialize chat history
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    # Display chat messages from history on app rerun
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    # React to user input
+    if prompt := st.chat_input("Bạn muốn hỏi gì về AI?"):
+        # Display user message in chat message container
+        st.chat_message("user").markdown(prompt)
+        # Add user message to chat history
+        st.session_state.messages.append({"role": "user", "content": prompt})
+
+        with st.spinner("🧠 Đang lục lại trí nhớ..."):
+            # 1. Retrieve context
+            results = kb.search_similar(prompt, n_results=3)
+            context_docs = []
+            if results['documents']:
+                for i in range(len(results['documents'][0])):
+                    doc = results['documents'][0][i]
+                    meta = results['metadatas'][0][i]
+                    context_docs.append(f"Từ bài báo '{meta['title']}':\n{meta['analysis']}\nNội dung: {doc[:1000]}")
+            
+            # 2. Generate response using Analyst
+            analyst = ResearchAnalyst()
+            response = analyst.chat_with_brain(prompt, context_docs)
+
+        # Display assistant response in chat message container
+        with st.chat_message("assistant"):
+            st.markdown(response)
+        
+        # Add assistant response to chat history
+        st.session_state.messages.append({"role": "assistant", "content": response})
 
 # Footer
 st.divider()
