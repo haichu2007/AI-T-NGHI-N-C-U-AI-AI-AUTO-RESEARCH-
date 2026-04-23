@@ -95,15 +95,27 @@ with st.sidebar:
     menu = st.radio("Chức năng", ["Tổng quan kho tri thức", "Báo cáo nghiên cứu mới", "Tìm kiếm thông minh", "Vòng lặp Nghiên cứu Đa Agent", "Chế độ AI Tự Tiến Hóa", "Chat với Bộ não AI"])
     st.divider()
     st.header("🧠 Bộ nhớ cá nhân")
+    
+    # Manual memory entry
+    with st.expander("➕ Thêm thông tin thủ công"):
+        manual_mem = st.text_input("Ghi nhớ điều gì về bạn?", placeholder="Ví dụ: Tôi tên là Hải, thích nghiên cứu AI Agents...", key="manual_mem_input")
+        if st.button("Lưu bộ nhớ"):
+            if manual_mem:
+                user_memory.add_memory(manual_mem)
+                st.success("Đã ghi nhớ!")
+                st.rerun()
+    
+    st.divider()
     all_memories = user_memory.get_all_memories()
     if all_memories:
+        st.markdown("**Các thông tin đã ghi nhớ:**")
         for m in all_memories:
             st.caption(f"• {m}")
-        if st.button("🗑️ Xóa bộ nhớ"):
+        if st.button("🗑️ Xóa sạch bộ nhớ"):
             user_memory.clear_memory()
             st.rerun()
     else:
-        st.info("AI chưa có thông tin gì về bạn.")
+        st.info("AI chưa có thông tin gì về bạn. Hãy chat để AI tự ghi nhớ hoặc thêm thủ công.")
     st.divider()
     st.info("Hệ thống đang hoạt động độc lập và bảo mật cục bộ.")
 
