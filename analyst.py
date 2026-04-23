@@ -1,5 +1,5 @@
 import ollama
-from config import OLLAMA_MODEL
+from config import OLLAMA_MODEL, OLLAMA_OPTIONS
 import logging
 
 logger = logging.getLogger(__name__)
@@ -31,9 +31,11 @@ class ResearchAnalyst:
         """
         
         try:
-            response = ollama.chat(model=self.model, messages=[
-                {'role': 'user', 'content': prompt}
-            ])
+            response = ollama.chat(
+                model=self.model, 
+                messages=[{'role': 'user', 'content': prompt}],
+                options=OLLAMA_OPTIONS
+            )
             return response['message']['content']
         except Exception as e:
             logger.error(f"Ollama error during analysis: {e}")
@@ -60,9 +62,11 @@ class ResearchAnalyst:
         """
         
         try:
-            response = ollama.chat(model=self.model, messages=[
-                {'role': 'user', 'content': prompt}
-            ])
+            response = ollama.chat(
+                model=self.model, 
+                messages=[{'role': 'user', 'content': prompt}],
+                options=OLLAMA_OPTIONS
+            )
             return response['message']['content']
         except Exception as e:
             logger.error(f"Architect Agent error: {e}")
@@ -84,9 +88,11 @@ class ResearchAnalyst:
         """
         
         try:
-            response = ollama.chat(model=self.model, messages=[
-                {'role': 'user', 'content': prompt}
-            ])
+            response = ollama.chat(
+                model=self.model, 
+                messages=[{'role': 'user', 'content': prompt}],
+                options=OLLAMA_OPTIONS
+            )
             return response['message']['content']
         except Exception as e:
             logger.error(f"Evolution Agent error: {e}")
@@ -113,13 +119,33 @@ class ResearchAnalyst:
         """
         
         try:
-            response = ollama.chat(model=self.model, messages=[
-                {'role': 'user', 'content': prompt}
-            ])
+            response = ollama.chat(
+                model=self.model, 
+                messages=[{'role': 'user', 'content': prompt}],
+                options=OLLAMA_OPTIONS
+            )
             return response['message']['content']
         except Exception as e:
             logger.error(f"Chat error: {e}")
             return "Xin lỗi, tôi gặp lỗi khi xử lý câu hỏi của bạn."
+
+            return "Xin lỗi, tôi gặp lỗi khi xử lý câu hỏi của bạn."
+
+    def stream_chat_with_brain(self, query, context_docs):
+        """Chat with the user and stream the response."""
+        context_text = "\n\n".join(context_docs)
+        prompt = f"Bạn là một Trợ lý Nghiên cứu AI. Tài liệu: {context_text}\nCâu hỏi: {query}\nTrả lời bằng tiếng Việt."
+        
+        try:
+            return ollama.chat(
+                model=self.model, 
+                messages=[{'role': 'user', 'content': prompt}],
+                options=OLLAMA_OPTIONS,
+                stream=True
+            )
+        except Exception as e:
+            logger.error(f"Stream Chat error: {e}")
+            return None
 
 if __name__ == "__main__":
     analyst = ResearchAnalyst()

@@ -23,3 +23,12 @@ MAX_RESULTS_PER_QUERY = 5
 # Research Configuration
 UPDATE_INTERVAL_DAYS = 1
 IDEATION_INTERVAL_DAYS = 7
+
+# Performance Configuration
+HIGH_PERFORMANCE_MODE = True
+OLLAMA_OPTIONS = {
+    "num_thread": 8,      # Tăng số luồng CPU (tùy cấu hình máy)
+    "num_gpu": 50,        # Đẩy tối đa layer lên GPU
+    "temperature": 0.7,   
+    "num_ctx": 16384,     # Mở rộng cửa sổ ngữ cảnh để AI "thông minh" hơn
+}
