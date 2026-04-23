@@ -313,14 +313,22 @@ elif menu == "Chat với Bộ não AI":
             
             # 2. Generate response using Analyst
             analyst = ResearchAnalyst()
-            response = analyst.chat_with_brain(prompt, context_docs)
+            stream = analyst.stream_chat_with_brain(prompt, context_docs)
 
         # Display assistant response in chat message container
         with st.chat_message("assistant"):
-            st.markdown(response)
-        
-        # Add assistant response to chat history
-        st.session_state.messages.append({"role": "assistant", "content": response})
+            if stream:
+                def response_generator():
+                    full_response = ""
+                    for chunk in stream:
+                        content = chunk['message']['content']
+                        full_response += content
+                        yield content
+                    st.session_state.messages.append({"role": "assistant", "content": full_response})
+                
+                st.write_stream(response_generator())
+            else:
+                st.error("Không thể kết nối với AI.")
 
 # Footer
 st.divider()

@@ -1,7 +1,7 @@
 import ollama
 from pdfminer.high_level import extract_text
 import logging
-from config import OLLAMA_MODEL
+from config import OLLAMA_MODEL, OLLAMA_OPTIONS
 
 logger = logging.getLogger(__name__)
 
@@ -42,9 +42,11 @@ class PaperProcessor:
         """
         
         try:
-            response = ollama.chat(model=self.model, messages=[
-                {'role': 'user', 'content': prompt}
-            ])
+            response = ollama.chat(
+                model=self.model, 
+                messages=[{'role': 'user', 'content': prompt}],
+                options=OLLAMA_OPTIONS
+            )
             return response['message']['content']
         except Exception as e:
             logger.error(f"Ollama error: {e}")
