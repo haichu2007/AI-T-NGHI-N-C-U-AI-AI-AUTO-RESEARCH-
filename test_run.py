@@ -4,12 +4,18 @@ from database import KnowledgeBase
 from analyst import ResearchAnalyst
 import logging
 import os
+import sys
+
+# Set encoding for console output if possible
+if sys.stdout.encoding != 'utf-8':
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("TestRun")
 
 def test():
-    logger.info("--- BẮT ĐẦU CHẠY THỬ NGHIỆM (1 BÀI BÁO) ---")
+    logger.info("--- START TEST RUN (1 PAPER) ---")
     
     collector = PaperCollector()
     
@@ -17,7 +23,6 @@ def test():
     import ollama
     try:
         models_resp = ollama.list()
-        # Handle both object and dict return types
         models = models_resp.models if hasattr(models_resp, 'models') else models_resp.get('models', [])
         available_names = []
         for m in models:
@@ -29,51 +34,57 @@ def test():
         if not any("llama3" in name for name in available_names):
             if any("tinyllama" in name for name in available_names):
                 model_to_use = "tinyllama"
-                logger.info("Using tinyllama for fast test.")
-            else:
-                logger.warning("llama3 not found, trying default.")
+                logger.info("Using tinyllama for speed.")
     except Exception as e:
         logger.error(f"Error checking models: {e}")
-        model_to_use = "llama3" # Fallback to default
+        model_to_use = "llama3"
 
     processor = PaperProcessor(model=model_to_use)
     kb = KnowledgeBase()
     analyst = ResearchAnalyst(model=model_to_use)
 
-    # 1. Tìm 1 bài báo
-    logger.info("Đang tìm bài báo mới nhất...")
+    # 1. Search
+    logger.info("Searching for latest paper...")
     papers = collector.search_papers(max_results=1)
     if not papers:
-        logger.error("Không tìm thấy bài báo nào.")
+        logger.error("No papers found.")
         return
 
     paper = papers[0]
-    logger.info(f"Tìm thấy: {paper['title']}")
+    logger.info(f"Found: {paper['title']}")
 
-    # 2. Tải và xử lý
+    # 2. Process
     pdf_path = collector.download_pdf(paper)
     if pdf_path:
-        logger.info("Đang trích xuất văn bản và phân tích bằng Ollama...")
+        logger.info("Extracting text and analyzing with Ollama...")
         content = processor.extract_text_from_pdf(pdf_path)
         if content:
             analysis = processor.summarize_paper(content, paper)
-            print("\n=== KẾT QUẢ PHÂN TÍCH CHI TIẾT ===")
-            print(analysis)
-            print("==================================\n")
             
-            # 3. Lưu vào DB
-            kb.add_paper(paper['id'], content, paper, analysis)
-            
-            # 4. Thử tạo báo cáo nhanh
-            logger.info("Đang tạo thử báo cáo tổng hợp...")
-            report = analyst.generate_research_report([analysis])
-            print("\n=== BÁO CÁO TỔNG HỢP GỢI Ý ===")
-            print(report)
-            print("==============================\n")
+            # Save to file to avoid console encoding issues
+            result_file = "test_result.md"
+            with open(result_file, "w", encoding="utf-8") as f:
+                f.write(f"# KẾT QUẢ CHẠY THỬ AI\n\n")
+                f.write(f"## Bài báo: {paper['title']}\n\n")
+                f.write(f"### Phân tích từ {model_to_use}:\n\n")
+                f.write(analysis)
+                f.write("\n\n---\n\n")
+                
+                # 3. Store in DB
+                kb.add_paper(paper['id'], content, paper, analysis)
+                
+                # 4. Generate suggestion
+                logger.info("Generating research suggestion...")
+                report = analyst.generate_research_report([analysis])
+                f.write(f"### Gợi ý hướng nghiên cứu:\n\n")
+                f.write(report)
+
+            logger.info(f"SUCCESS! Results saved to {result_file}")
+            print(f"DONE. Check {result_file} for details.")
         else:
-            logger.error("Không thể trích xuất nội dung PDF.")
+            logger.error("Failed to extract content.")
     else:
-        logger.error("Không thể tải PDF.")
+        logger.error("Failed to download PDF.")
 
 if __name__ == "__main__":
     test()
