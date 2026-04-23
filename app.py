@@ -4,6 +4,24 @@ from database import KnowledgeBase
 from pathlib import Path
 import os
 from datetime import datetime
+import importlib
+
+# Local module imports
+import collector
+import processor
+import analyst
+import database
+
+# Force reload local modules to prevent AttributeError from Streamlit caching
+importlib.reload(collector)
+importlib.reload(processor)
+importlib.reload(analyst)
+importlib.reload(database)
+
+from collector import PaperCollector
+from processor import PaperProcessor
+from analyst import ResearchAnalyst
+from database import KnowledgeBase
 
 # Page config
 st.set_page_config(
@@ -74,7 +92,7 @@ st.markdown("Hệ thống tự động nghiên cứu và cập nhật tri thức
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/2103/2103633.png", width=100)
     st.header("Dashboard")
-    menu = st.radio("Chức năng", ["Tổng quan kho tri thức", "Báo cáo nghiên cứu mới", "Tìm kiếm thông minh", "Vòng lặp Nghiên cứu Đa Agent"])
+    menu = st.radio("Chức năng", ["Tổng quan kho tri thức", "Báo cáo nghiên cứu mới", "Tìm kiếm thông minh", "Vòng lặp Nghiên cứu Đa Agent", "Chế độ AI Tự Tiến Hóa"])
     st.divider()
     st.info("Hệ thống đang hoạt động độc lập và bảo mật cục bộ.")
 
@@ -156,10 +174,6 @@ elif menu == "Vòng lặp Nghiên cứu Đa Agent":
             st.error("Vui lòng nhập chủ đề!")
         else:
             with st.status("🤖 AI Agents đang làm việc...", expanded=True) as status:
-                from collector import PaperCollector
-                from processor import PaperProcessor
-                from analyst import ResearchAnalyst
-                
                 collector = PaperCollector()
                 processor = PaperProcessor()
                 analyst = ResearchAnalyst()
@@ -196,6 +210,76 @@ elif menu == "Vòng lặp Nghiên cứu Đa Agent":
                         f.write(f"# Báo cáo Nghiên cứu Đa Agent\n\nChủ đề gốc: {seed_topic}\n\n{upgraded_report}")
                     
                     status.update(label="Hoàn tất chu trình!", state="complete")
+
+elif menu == "Chế độ AI Tự Tiến Hóa":
+    st.subheader("🌌 Autonomous AI Evolution Mode")
+    st.markdown("Trong chế độ này, AI sẽ tự đặt câu hỏi, tự tìm kiếm và tự nâng cấp tri thức mà không cần sự can thiệp của con người.")
+    
+    if "auto_evolve_running" not in st.session_state:
+        st.session_state.auto_evolve_running = False
+        st.session_state.evolve_history = []
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🚀 Bắt đầu Tự tiến hóa", disabled=st.session_state.auto_evolve_running):
+            st.session_state.auto_evolve_running = True
+    with col2:
+        if st.button("🛑 Dừng lại"):
+            st.session_state.auto_evolve_running = False
+
+    if st.session_state.auto_evolve_running:
+        with st.status("♾️ AI đang tự tiến hóa...") as status:
+            analyst = ResearchAnalyst()
+            collector = PaperCollector()
+            processor = PaperProcessor()
+            
+            # Step 1: Self-initiation
+            st.write("🧠 **AI Initiator**: Đang suy ngẫm về các biên giới AI mới...")
+            history = "\n".join(st.session_state.evolve_history[-3:]) # Last 3 steps for context
+            quest = analyst.generate_autonomous_quest(history)
+            
+            st.markdown(f"**Nhiệm vụ tự đặt ra:**\n{quest}")
+            
+            # Extract query (simple heuristic)
+            query = quest.split("Search Query:")[-1].strip() if "Search Query:" in quest else quest.split("\n")[-1]
+            
+            # Step 2: Research
+            st.write(f"🕵️ **AI Researcher**: Đang thực thi nhiệm vụ: *{query}*")
+            papers = collector.search_papers(query=query, max_results=2)
+            
+            findings = []
+            for p in papers:
+                st.write(f"  - Đang nạp tri thức từ: *{p['title']}*")
+                pdf_path = collector.download_pdf(p)
+                if pdf_path:
+                    text = processor.extract_text_from_pdf(pdf_path)
+                    if text:
+                        analysis = processor.summarize_paper(text, p)
+                        findings.append(analysis)
+                        kb.add_paper(p['id'], text, p, analysis)
+            
+            # Step 3: Integrate and Evolve
+            if findings:
+                st.write("🏗️ **AI Architect**: Đang tích hợp tri thức và nâng cấp hệ thống...")
+                evolution_result = analyst.refine_and_upgrade_topic(quest, findings)
+                st.session_state.evolve_history.append(evolution_result)
+                st.markdown(evolution_result)
+                
+                # Save report
+                report_path = Path("data") / f"evolution_{datetime.now().strftime('%Y%m%d_%H%M')}.md"
+                with open(report_path, "w", encoding="utf-8") as f:
+                    f.write(f"# Nhật ký Tự tiến hóa AI\n\n{evolution_result}")
+            
+            status.update(label="Vòng lặp hoàn tất. Đang chuẩn bị bước tiếp theo...", state="complete")
+            st.rerun() # Continue the loop
+
+    # Show History
+    if st.session_state.evolve_history:
+        st.divider()
+        st.markdown("### 📜 Lịch sử tiến hóa")
+        for idx, step in enumerate(reversed(st.session_state.evolve_history)):
+            with st.expander(f"Bước tiến hóa {len(st.session_state.evolve_history) - idx}"):
+                st.markdown(step)
 
 # Footer
 st.divider()
