@@ -245,7 +245,7 @@ elif menu == "Chế độ AI Tự Tiến Hóa":
             
             # Step 2: Research
             st.write(f"🕵️ **AI Researcher**: Đang thực thi nhiệm vụ: *{query}*")
-            papers = collector.search_papers(query=query, max_results=2)
+            papers = collector.search_papers(query=query, max_results=5) # Tăng lên 5 bài báo mỗi bước
             
             findings = []
             for p in papers:
