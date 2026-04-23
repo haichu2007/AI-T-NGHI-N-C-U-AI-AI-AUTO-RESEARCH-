@@ -1,0 +1,8 @@
+ollama
+arxiv
+pdfminer.six
+chromadb
+schedule
+requests
+tqdm
+python-dotenv
