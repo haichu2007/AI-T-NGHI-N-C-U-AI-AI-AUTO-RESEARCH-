@@ -13,16 +13,28 @@ def test():
     
     collector = PaperCollector()
     
-    # Check for available models and use tinyllama if llama3 is missing
+    # Check for available models
     import ollama
-    available_models = [m['name'] for m in ollama.list()['models']]
-    model_to_use = "llama3"
-    if "llama3" not in [m.split(':')[0] for m in available_models]:
-        if "tinyllama" in [m.split(':')[0] for m in available_models]:
-            model_to_use = "tinyllama"
-            logger.info("Sử dụng tinyllama cho chế độ chạy thử nhanh.")
-        else:
-            logger.warning("Không tìm thấy llama3, đang thử chạy với mô hình mặc định.")
+    try:
+        models_resp = ollama.list()
+        # Handle both object and dict return types
+        models = models_resp.models if hasattr(models_resp, 'models') else models_resp.get('models', [])
+        available_names = []
+        for m in models:
+            if hasattr(m, 'model'): available_names.append(m.model)
+            elif isinstance(m, dict): available_names.append(m.get('name', ''))
+        
+        logger.info(f"Models found: {available_names}")
+        model_to_use = "llama3"
+        if not any("llama3" in name for name in available_names):
+            if any("tinyllama" in name for name in available_names):
+                model_to_use = "tinyllama"
+                logger.info("Using tinyllama for fast test.")
+            else:
+                logger.warning("llama3 not found, trying default.")
+    except Exception as e:
+        logger.error(f"Error checking models: {e}")
+        model_to_use = "llama3" # Fallback to default
 
     processor = PaperProcessor(model=model_to_use)
     kb = KnowledgeBase()
