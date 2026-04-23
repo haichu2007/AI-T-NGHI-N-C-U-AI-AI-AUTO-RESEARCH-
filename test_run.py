@@ -12,9 +12,21 @@ def test():
     logger.info("--- BẮT ĐẦU CHẠY THỬ NGHIỆM (1 BÀI BÁO) ---")
     
     collector = PaperCollector()
-    processor = PaperProcessor()
+    
+    # Check for available models and use tinyllama if llama3 is missing
+    import ollama
+    available_models = [m['name'] for m in ollama.list()['models']]
+    model_to_use = "llama3"
+    if "llama3" not in [m.split(':')[0] for m in available_models]:
+        if "tinyllama" in [m.split(':')[0] for m in available_models]:
+            model_to_use = "tinyllama"
+            logger.info("Sử dụng tinyllama cho chế độ chạy thử nhanh.")
+        else:
+            logger.warning("Không tìm thấy llama3, đang thử chạy với mô hình mặc định.")
+
+    processor = PaperProcessor(model=model_to_use)
     kb = KnowledgeBase()
-    analyst = ResearchAnalyst()
+    analyst = ResearchAnalyst(model=model_to_use)
 
     # 1. Tìm 1 bài báo
     logger.info("Đang tìm bài báo mới nhất...")
