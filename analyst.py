@@ -68,6 +68,30 @@ class ResearchAnalyst:
             logger.error(f"Architect Agent error: {e}")
             return "Không thể tinh chỉnh chủ đề."
 
+    def generate_autonomous_quest(self, history_summary=""):
+        """AI Initiator: Generates a new research quest without user input."""
+        prompt = f"""
+        Bạn là một Trí tuệ nhân tạo Tự tiến hóa (Self-Evolving AI). 
+        Lịch sử nghiên cứu gần đây: {history_summary if history_summary else 'Chưa có dữ liệu.'}
+        
+        Nhiệm vụ:
+        1. Phân tích các biên giới tri thức hiện tại của AI (LLMs, Agents, Robotics, v.v.).
+        2. Tự đặt ra một "Câu hỏi nghiên cứu" (Research Question) mang tính đột phá và chưa có lời giải rõ ràng.
+        3. Giải thích tại sao câu hỏi này quan trọng đối với sự phát triển của chính AI.
+        4. Tạo ra một từ khóa tìm kiếm (Search Query) để bắt đầu thu thập tài liệu.
+        
+        Trả lời bằng tiếng Việt, tập trung vào những thứ mang tính tương lai và cấp tiến.
+        """
+        
+        try:
+            response = ollama.chat(model=self.model, messages=[
+                {'role': 'user', 'content': prompt}
+            ])
+            return response['message']['content']
+        except Exception as e:
+            logger.error(f"Evolution Agent error: {e}")
+            return "Khởi tạo nghiên cứu tự thân thất bại."
+
 if __name__ == "__main__":
     analyst = ResearchAnalyst()
     # report = analyst.generate_research_report(["Summary 1...", "Summary 2..."])
