@@ -32,11 +32,19 @@ python main.py
 
 ## Sử dụng
 
-1. Chọn loại file `Word` hoặc `Excel`.
-2. Chọn đường dẫn lưu file.
-3. Nhập prompt / yêu cầu cho Ollama (ví dụ: "Tạo danh sách 10 ý tưởng kinh doanh" hoặc "Phân tích thị trường công nghệ").
-4. Nhấn `Chạy và lưu kết quả` để tạo nội dung và lưu vào Word/Excel.
-5. Nếu muốn tạo file Excel trống trước, chọn `Excel`, chọn đường dẫn và nhấn `Tạo file Excel`.
+1. Chọn backend `Ollama` hoặc `OpenClaw`.
+2. Chọn loại file `Word` hoặc `Excel`.
+3. Chọn đường dẫn lưu file.
+4. Nhập prompt / yêu cầu (ví dụ: "Tạo danh sách 10 ý tưởng kinh doanh" hoặc "Phân tích thị trường công nghệ").
+5. Nhấn `Chạy và lưu kết quả` để tạo nội dung và lưu vào Word/Excel.
+6. Nếu muốn tạo file Excel trống trước, chọn `Excel`, chọn đường dẫn và nhấn `Tạo file Excel`.
+
+### OpenClaw
+
+- Chọn backend `OpenClaw` khi bạn muốn dùng OpenClaw local.
+- `API Ollama` chỉ dùng khi backend là `Ollama`.
+- OpenClaw sẽ cố gắng kết nối đến CMDOP local agent.
+- Nếu không kết nối được, hãy kiểm tra OpenClaw/CMDOP đã chạy.
 
 ### Tính năng Excel
 

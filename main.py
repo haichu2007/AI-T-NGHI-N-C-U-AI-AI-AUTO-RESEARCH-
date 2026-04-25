@@ -12,6 +12,7 @@ from openpyxl import Workbook, load_workbook
 
 OLLAMA_API = "http://127.0.0.1:11434/v1/completions"
 MODEL_NAME = "deepseek"
+BACKEND_OPTIONS = ["Ollama", "OpenClaw"]
 
 
 def parse_ollama_response(payload: dict) -> str:
@@ -65,6 +66,27 @@ def ollama_query(prompt: str) -> str:
         if exc.response is not None and exc.response.status_code == 404:
             return request_ollama(chat_url, payload_chat)
         raise
+
+
+def openclaw_query(prompt: str) -> str:
+    try:
+        from openclaw import OpenClaw
+    except ImportError as exc:
+        raise RuntimeError(
+            "Không thể import OpenClaw. Hãy cài openclaw trong virtualenv bằng `pip install openclaw` và kiểm tra dependencies."
+        ) from exc
+
+    try:
+        client = OpenClaw.local()
+    except Exception as exc:
+        raise RuntimeError(
+            "Không kết nối được OpenClaw local. Hãy kiểm tra CMDOP agent đang chạy hoặc cài đặt OpenClaw đúng cách."
+        ) from exc
+
+    result = client.agent.run(prompt)
+    if hasattr(result, "text"):
+        return result.text
+    return str(result)
 
 
 def save_word(file_path: Path, text: str) -> None:
@@ -162,17 +184,21 @@ def choose_file() -> None:
 def run_action() -> None:
     prompt = prompt_text.get("1.0", tk.END).strip()
     output_path = file_path_var.get().strip()
+    backend = backend_var.get()
     if not prompt:
-        messagebox.showwarning("Thiếu thông tin", "Vui lòng nhập prompt cho Ollama.")
+        messagebox.showwarning("Thiếu thông tin", "Vui lòng nhập yêu cầu.")
         return
     if not output_path:
         messagebox.showwarning("Thiếu thông tin", "Vui lòng chọn file Word hoặc Excel.")
         return
 
     try:
-        status_var.set("Đang gửi yêu cầu tới Ollama...")
+        status_var.set(f"Đang gửi yêu cầu tới {backend}...")
         root.update_idletasks()
-        result = ollama_query(prompt)
+        if backend == "OpenClaw":
+            result = openclaw_query(prompt)
+        else:
+            result = ollama_query(prompt)
 
         save_path = Path(output_path)
         if file_type_var.get() == "Word":
@@ -188,7 +214,7 @@ def run_action() -> None:
         status_var.set("Lỗi: kiểm tra Ollama đang chạy và API endpoint.")
     except Exception as exc:
         messagebox.showerror("Lỗi", str(exc))
-        status_var.set("Đã xảy ra lỗi khi ghi file.")
+        status_var.set(str(exc))
 
 
 root = tk.Tk()
@@ -204,31 +230,37 @@ frame_top = tk.Frame(root, padx=12, pady=12)
 frame_top.pack(fill=tk.X)
 
 api_url_var = tk.StringVar(value=OLLAMA_API)
-label_api = tk.Label(frame_top, text="API Ollama:", anchor="w")
-label_api.grid(row=0, column=0, sticky="w")
+backend_var = tk.StringVar(value=BACKEND_OPTIONS[0])
+label_backend = tk.Label(frame_top, text="Backend:", anchor="w")
+label_backend.grid(row=0, column=0, sticky="w")
+option_backend = tk.OptionMenu(frame_top, backend_var, *BACKEND_OPTIONS)
+option_backend.grid(row=0, column=1, sticky="w")
+
+label_api = tk.Label(frame_top, text="API Ollama (Ollama only):", anchor="w")
+label_api.grid(row=1, column=0, sticky="w")
 entry_api = tk.Entry(frame_top, width=60, textvariable=api_url_var)
-entry_api.grid(row=0, column=1, columnspan=3, sticky="w", padx=(8, 0))
+entry_api.grid(row=1, column=1, columnspan=3, sticky="w", padx=(8, 0))
 
 label_model = tk.Label(frame_top, text="Model:", anchor="w")
-label_model.grid(row=1, column=0, sticky="w", pady=(8, 0))
+label_model.grid(row=2, column=0, sticky="w", pady=(8, 0))
 entry_model = tk.Entry(frame_top, width=20)
 entry_model.insert(0, MODEL_NAME)
 entry_model.config(state="readonly")
-entry_model.grid(row=1, column=1, sticky="w", pady=(8, 0), padx=(8, 0))
+entry_model.grid(row=2, column=1, sticky="w", pady=(8, 0), padx=(8, 0))
 
 label_type = tk.Label(frame_top, text="Loại file:", anchor="w")
-label_type.grid(row=2, column=0, sticky="w", pady=(8, 0))
+label_type.grid(row=3, column=0, sticky="w", pady=(8, 0))
 option_menu = tk.OptionMenu(frame_top, file_type_var, "Word", "Excel")
-option_menu.grid(row=2, column=1, sticky="w", pady=(8, 0), padx=(8, 0))
+option_menu.grid(row=3, column=1, sticky="w", pady=(8, 0), padx=(8, 0))
 
 label_path = tk.Label(frame_top, text="File output:", anchor="w")
-label_path.grid(row=3, column=0, sticky="w", pady=(8, 0))
+label_path.grid(row=4, column=0, sticky="w", pady=(8, 0))
 entry_path = tk.Entry(frame_top, textvariable=file_path_var, width=50)
-entry_path.grid(row=3, column=1, sticky="w", pady=(8, 0), padx=(8, 0))
+entry_path.grid(row=4, column=1, sticky="w", pady=(8, 0), padx=(8, 0))
 button_path = tk.Button(frame_top, text="Chọn file…", command=choose_file)
-button_path.grid(row=3, column=2, sticky="w", pady=(8, 0), padx=(8, 0))
+button_path.grid(row=4, column=2, sticky="w", pady=(8, 0), padx=(8, 0))
 
-label_prompt = tk.Label(root, text="Nhập yêu cầu cho Ollama:")
+label_prompt = tk.Label(root, text="Nhập yêu cầu:")
 label_prompt.pack(anchor="w", padx=12)
 prompt_text = ScrolledText(root, width=90, height=10)
 prompt_text.pack(padx=12, pady=(0, 12))
@@ -243,7 +275,7 @@ button_create_excel.pack(side=tk.LEFT, padx=(8, 0))
 status_label = tk.Label(root, textvariable=status_var, anchor="w", fg="#084B8A")
 status_label.pack(fill=tk.X, padx=12, pady=(8, 0))
 
-label_output = tk.Label(root, text="Kết quả trả về từ Ollama:")
+label_output = tk.Label(root, text="Kết quả trả về:")
 label_output.pack(anchor="w", padx=12, pady=(12, 0))
 output_text = ScrolledText(root, width=90, height=16)
 output_text.pack(padx=12, pady=(0, 12))
