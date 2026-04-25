@@ -1,0 +1,56 @@
+.App {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+section {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(45deg, #ff0000, #0000ff);
+  color: white;
+  font-size: 2rem;
+  text-align: center;
+}
+
+.hero {
+  background: linear-gradient(45deg, #ff0000, #0000ff);
+}
+
+.about {
+  background: linear-gradient(45deg, #0000ff, #ff0000);
+}
+
+.projects {
+  background: linear-gradient(45deg, #ff0000, #00ff00);
+}
+
+.skills {
+  background: linear-gradient(45deg, #00ff00, #0000ff);
+}
+
+.contact {
+  background: linear-gradient(45deg, #0000ff, #ff0000);
+}
+
+.hero-content h1 {
+  font-size: 3rem;
+  margin: 0;
+}
+
+.hero-content p {
+  font-size: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  section {
+    font-size: 1.5rem;
+  }
+  .hero-content h1 {
+    font-size: 2rem;
+  }
+  .hero-content p {
+    font-size: 1.2rem;
+  }
+}
