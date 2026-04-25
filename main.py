@@ -65,6 +65,32 @@ def save_excel(file_path: Path, text: str) -> None:
     workbook.save(file_path)
 
 
+def create_excel_file() -> None:
+    if file_type_var.get() != "Excel":
+        messagebox.showwarning("Chọn Excel", "Vui lòng chọn loại file Excel để tạo file mới.")
+        return
+
+    output_path = file_path_var.get().strip()
+    if not output_path:
+        messagebox.showwarning("Thiếu đường dẫn", "Vui lòng chọn vị trí và tên file Excel để tạo.")
+        return
+
+    save_path = Path(output_path)
+    if save_path.exists():
+        overwrite = messagebox.askyesno(
+            "File đã tồn tại",
+            f"File {save_path.name} đã tồn tại. Bạn có muốn tạo lại file mới và ghi đè?",
+        )
+        if not overwrite:
+            status_var.set("Đã hủy tạo file Excel.")
+            return
+
+    workbook = Workbook()
+    workbook.save(save_path)
+    status_var.set(f"Đã tạo file Excel mới: {save_path}")
+    messagebox.showinfo("Hoàn thành", f"Đã tạo file Excel: {save_path}")
+
+
 def choose_file() -> None:
     file_type = file_type_var.get()
     if file_type == "Word":
