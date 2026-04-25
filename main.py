@@ -10,20 +10,11 @@ from tkinter.scrolledtext import ScrolledText
 from docx import Document
 from openpyxl import Workbook, load_workbook
 
-OLLAMA_API = "http://127.0.0.1:11434/v1/chat/completions"
+OLLAMA_API = "http://127.0.0.1:11434/v1/completions"
 MODEL_NAME = "deepseek"
 
 
-def ollama_query(prompt: str) -> str:
-    data = {
-        "model": MODEL_NAME,
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.2,
-    }
-    response = requests.post(OLLAMA_API, json=data, timeout=30)
-    response.raise_for_status()
-    payload = response.json()
-
+def parse_ollama_response(payload: dict) -> str:
     if "choices" in payload and payload["choices"]:
         message = payload["choices"][0].get("message") or payload["choices"][0]
         if isinstance(message, dict):
@@ -33,7 +24,47 @@ def ollama_query(prompt: str) -> str:
     if "result" in payload:
         return str(payload["result"])
 
+    if "output" in payload:
+        return str(payload["output"])
+
     return json.dumps(payload, indent=2, ensure_ascii=False)
+
+
+def request_ollama(url: str, json_data: dict) -> str:
+    response = requests.post(url, json=json_data, timeout=30)
+    response.raise_for_status()
+    return parse_ollama_response(response.json())
+
+
+def ollama_query(prompt: str) -> str:
+    api_url = api_url_var.get().strip() or OLLAMA_API
+    base_url = api_url.rstrip("/")
+
+    chat_url = base_url + "/v1/chat/completions"
+    completion_url = base_url + "/v1/completions"
+
+    payload_chat = {
+        "model": MODEL_NAME,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.2,
+    }
+    payload_completions = {
+        "model": MODEL_NAME,
+        "prompt": prompt,
+        "temperature": 0.2,
+    }
+
+    if api_url.endswith("/v1/chat/completions"):
+        return request_ollama(api_url, payload_chat)
+    if api_url.endswith("/v1/completions"):
+        return request_ollama(api_url, payload_completions)
+
+    try:
+        return request_ollama(completion_url, payload_completions)
+    except requests.HTTPError as exc:
+        if exc.response is not None and exc.response.status_code == 404:
+            return request_ollama(chat_url, payload_chat)
+        raise
 
 
 def save_word(file_path: Path, text: str) -> None:
@@ -45,20 +76,39 @@ def save_word(file_path: Path, text: str) -> None:
 def save_excel(file_path: Path, text: str) -> None:
     workbook = load_workbook(file_path) if file_path.exists() else Workbook()
     sheet = workbook.active
+
+    # Xóa dữ liệu cũ nếu file đã tồn tại
+    if file_path.exists():
+        sheet.delete_rows(1, sheet.max_row)
+
+    # Thêm headers
+    headers = ["STT", "Nội dung", "Mô tả", "Ghi chú"]
+    for col_num, header in enumerate(headers, 1):
+        sheet.cell(row=1, column=col_num, value=header)
+
+    # Parse nội dung thành rows
     rows = []
-
-    for line in text.strip().splitlines():
+    lines = text.strip().splitlines()
+    for idx, line in enumerate(lines, start=1):
+        # Thử parse theo tab hoặc pipe
         if "\t" in line:
-            rows.append([cell.strip() for cell in line.split("\t")])
+            cells = [cell.strip() for cell in line.split("\t")]
         elif "|" in line:
-            row = [cell.strip() for cell in line.split("|") if cell.strip()]
-            if row:
-                rows.append(row)
+            cells = [cell.strip() for cell in line.split("|") if cell.strip()]
         else:
-            rows.append([line.strip()])
+            # Nếu không có dấu phân cách, chia thành các phần nhỏ hơn
+            cells = [line.strip()]
 
-    start_row = sheet.max_row + 1 if sheet.max_row > 1 or sheet.cell(row=1, column=1).value else 1
-    for r, row in enumerate(rows, start=start_row):
+        # Đảm bảo có đủ cột
+        while len(cells) < len(headers) - 1:  # trừ STT
+            cells.append("")
+
+        # Thêm STT và cells
+        row = [idx] + cells[:len(headers)-1]
+        rows.append(row)
+
+    # Ghi rows vào sheet
+    for r, row in enumerate(rows, start=2):  # bắt đầu từ row 2
         for c, value in enumerate(row, start=1):
             sheet.cell(row=r, column=c, value=value)
 
@@ -153,11 +203,10 @@ status_var = tk.StringVar(value="Chưa kết nối.")
 frame_top = tk.Frame(root, padx=12, pady=12)
 frame_top.pack(fill=tk.X)
 
+api_url_var = tk.StringVar(value=OLLAMA_API)
 label_api = tk.Label(frame_top, text="API Ollama:", anchor="w")
 label_api.grid(row=0, column=0, sticky="w")
-entry_api = tk.Entry(frame_top, width=60)
-entry_api.insert(0, OLLAMA_API)
-entry_api.config(state="readonly")
+entry_api = tk.Entry(frame_top, width=60, textvariable=api_url_var)
 entry_api.grid(row=0, column=1, columnspan=3, sticky="w", padx=(8, 0))
 
 label_model = tk.Label(frame_top, text="Model:", anchor="w")
