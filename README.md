@@ -34,9 +34,10 @@ python main.py
 1. Chọn loại file `Word` hoặc `Excel`.
 2. Chọn đường dẫn lưu file.
 3. Nhập prompt / yêu cầu cho Ollama.
-4. Nhấn `Chạy và lưu kết quả`.
+4. Nhấn `Chạy và lưu kết quả` để tạo nội dung và lưu vào Word/Excel.
+5. Nếu muốn tạo file Excel trống trước, chọn `Excel`, chọn đường dẫn và nhấn `Tạo file Excel`.
 
-Ứng dụng sẽ gửi prompt đến Ollama local, lấy kết quả trả về và lưu thành file Word hoặc Excel.
+Ứng dụng sẽ gửi prompt đến Ollama local, lấy kết quả trả về và lưu thành file Word hoặc Excel. Bạn cũng có thể tạo file Excel trống bằng nút `Tạo file Excel`.
 
 ## Lưu ý
 

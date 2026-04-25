@@ -188,6 +188,8 @@ button_frame = tk.Frame(root, padx=12)
 button_frame.pack(fill=tk.X)
 button_run = tk.Button(button_frame, text="Chạy và lưu kết quả", command=run_action, width=24)
 button_run.pack(side=tk.LEFT)
+button_create_excel = tk.Button(button_frame, text="Tạo file Excel", command=create_excel_file, width=18)
+button_create_excel.pack(side=tk.LEFT, padx=(8, 0))
 
 status_label = tk.Label(root, textvariable=status_var, anchor="w", fg="#084B8A")
 status_label.pack(fill=tk.X, padx=12, pady=(8, 0))
